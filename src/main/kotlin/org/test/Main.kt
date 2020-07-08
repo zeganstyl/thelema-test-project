@@ -1,20 +1,16 @@
 package org.test
 
-import org.ksdfv.thelema.ActiveCamera
-import org.ksdfv.thelema.Camera
+import org.ksdfv.thelema.g3d.ActiveCamera
+import org.ksdfv.thelema.g3d.Camera
 import org.ksdfv.thelema.data.DATA
 import org.ksdfv.thelema.fs.FS
-import org.ksdfv.thelema.gl.GL
-import org.ksdfv.thelema.gl.GL_COLOR_BUFFER_BIT
-import org.ksdfv.thelema.gl.GL_DEPTH_BUFFER_BIT
-import org.ksdfv.thelema.gl.GL_UNSIGNED_SHORT
 import org.ksdfv.thelema.lwjgl3.Lwjgl3App
-import org.ksdfv.thelema.math.IVec3
 import org.ksdfv.thelema.math.Vec3
 import org.ksdfv.thelema.mesh.*
 import org.ksdfv.thelema.shader.Shader
 import org.ksdfv.thelema.texture.Texture2D
 import org.intellij.lang.annotations.Language
+import org.ksdfv.thelema.gl.*
 
 object Main {
     @JvmStatic
@@ -23,44 +19,45 @@ object Main {
 
         val mesh = Mesh()
 
-        mesh.vertices = IVertexBuffer.build(
-            DATA.bytes(4 * 5 * 4).apply {
-                floatView().apply {
-                    // x, y, z    u, v
-                    put(1f, 0f, 1f,   1f, 1f)
-                    put(1f, 0f, -1f,   1f, 0f)
-                    put(-1f, 0f, 1f,   0f, 1f)
-                    put(-1f, 0f, -1f,   0f, 0f)
-                }
-            },
-            VertexAttributes(VertexAttribute.Position, VertexAttribute.UV[0])
+        val vertexInputs = VertexInputs(
+                VertexInput(3, "aPosition", GL_FLOAT, true),
+                VertexInput(2, "aUV", GL_FLOAT, true)
         )
 
+        mesh.vertices = IVertexBuffer.build(
+                DATA.bytes(4 * 5 * 4).apply {
+                    floatView().apply {
+                        // x, y, z    u, v
+                        put(1f, 0f, 1f,   1f, 1f)
+                        put(1f, 0f, -1f,   1f, 0f)
+                        put(-1f, 0f, 1f,   0f, 1f)
+                        put(-1f, 0f, -1f,   0f, 0f)
+                    }
+                }, vertexInputs)
+
         mesh.indices = IIndexBufferObject.build(
-            DATA.bytes(6 * 2).apply {
-                shortView().apply {
-                    put(
-                        0, 1, 2,
-                        3, 1, 2
-                    )
-                }
-            },
-            GL_UNSIGNED_SHORT
-        )
+                DATA.bytes(6 * 2).apply {
+                    shortView().apply {
+                        put(
+                                0, 1, 2,
+                                3, 1, 2
+                        )
+                    }
+                }, type = GL_UNSIGNED_SHORT)
 
         @Language("GLSL")
         val shader = Shader(
-            vertCode = """
-attribute vec3 a_position;
-attribute vec2 a_texCoord0;
+                vertCode = """
+attribute vec3 aPosition;
+attribute vec2 aUV;
 varying vec2 vUV;
 uniform mat4 projViewModelTrans;
 
 void main() {
-    vUV = a_texCoord0;
-    gl_Position = projViewModelTrans * vec4(a_position, 1.0);
+    vUV = aUV;
+    gl_Position = projViewModelTrans * vec4(aPosition, 1.0);
 }""",
-            fragCode = """
+                fragCode = """
 varying vec2 vUV;
 uniform sampler2D tex;
 
@@ -71,12 +68,12 @@ void main() {
         shader["tex"] = 0
         val texture = Texture2D(FS.internal("thelema-logo.png"))
 
-        ActiveCamera.api = Camera().apply {
-            lookAt(Vec3(0f, 2f, 2f), IVec3.Zero)
-            near = 0.1f
-            far = 100f
-            update()
-        }
+        ActiveCamera.api = Camera(
+                from = Vec3(0f, 2f, 2f),
+                to = Vec3(0f, 0f, 0f),
+                near = 0.1f,
+                far = 100f
+        )
 
         GL.isDepthTestEnabled = true
         GL.glClearColor(0.5f, 0.5f, 0.5f, 1f)
