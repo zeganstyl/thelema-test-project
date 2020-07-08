@@ -20,8 +20,8 @@ object Main {
         val mesh = Mesh()
 
         val vertexInputs = VertexInputs(
-                VertexInput(3, "aPosition", GL_FLOAT, true),
-                VertexInput(2, "aUV", GL_FLOAT, true)
+                VertexInput(size = 3, name = "aPosition", type = GL_FLOAT, normalized = true),
+                VertexInput(size = 2, name = "aUV", type = GL_FLOAT, normalized = true)
         )
 
         mesh.vertices = IVertexBuffer.build(
